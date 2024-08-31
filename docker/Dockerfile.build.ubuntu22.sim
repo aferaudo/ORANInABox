@@ -1,0 +1,56 @@
+FROM ran-base:latest as ran-build-sim
+ARG BUILD_OPTION
+
+RUN rm -Rf /oai-ran
+WORKDIR /oai-ran
+COPY . .
+
+# installing correct version of gcc
+RUN apt-get update && apt-get install wget
+
+
+# Installing swig
+RUN git clone https://github.com/swig/swig.git && \
+  cd swig && \
+  wget https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.43/pcre2-10.43.tar.bz2 && Tools/pcre-build.sh && \
+  git checkout release-4.1 && \
+  ./autogen.sh && \
+  ./configure --prefix=/usr/ && \
+  make -j8 && \
+  make install
+
+# build all targets so final targets can be created afterwards
+RUN /bin/sh oaienv && \
+    cd openair2/E2AP/flexric/ && \
+    rm -rf build && \
+    mkdir build && cd build && \
+    cmake ../ -DKPM_VERSION=KPM_V3_00 && \
+    make && \
+    mkdir e2lib && \
+    mv ./src/sm/mac_sm/libmac_sm.so e2lib && \
+    mv ./src/sm/rlc_sm/librlc_sm.so e2lib && \
+    mv ./src/sm/pdcp_sm/libpdcp_sm.so e2lib && \
+    mv ./src/sm/slice_sm/libslice_sm.so e2lib && \
+    mv ./src/sm/tc_sm/libtc_sm.so e2lib && \
+    mv ./src/sm/kpm_sm/kpm_sm_v03.00/libkpm_sm.so e2lib && \
+    mv ./src/sm/rc_sm/librc_sm.so e2lib
+    
+RUN /bin/sh oaienv && \
+    cd cmake_targets && \
+    mkdir -p log && \
+    ./build_oai -c --ninja \
+      --eNB --gNB --RU --UE --nrUE \
+      --build-lib "telnetsrv enbscope uescope nrscope" \
+      -w USRP -t Ethernet \
+      --build-e2 --cmake-opt -DXAPP_MULTILANGUAGE=OFF \
+      --noavx512 \
+      --cmake-opt -DCMAKE_C_FLAGS="-Werror" --cmake-opt -DCMAKE_CXX_FLAGS="-Werror" $BUILD_OPTION && \
+    # Mainly to see if the sanitize option was perfectly executed
+    echo "---- ldd on executables ----" && \
+    ldd ran_build/build/*softmodem* ran_build/build/nr-cuup ran_build/build/oairu && \
+    echo "---- ldd on shared libraries ----" && \
+    ldd ran_build/build/*.so
+
+
+# build all targets so final targets can be created afterwards
+    
