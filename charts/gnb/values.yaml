@@ -4,7 +4,8 @@ kubernetesType: Vanilla  #Vanilla for community kubernetes distribution else Ope
 ## To know more about them follow this tutorial https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-fed/-/tree/master/openshift
 nfimage:   # image name either locally present or in a public/private repository
   # repository: docker.io/oaisoftwarealliance/oai-gnb
-  repository: angeloferaudo/oai-gnb-sim
+  repository: angeloferaudo/oai-gnb-sim # comment this if you want to use a custom image
+  # repository: local/oai-gnb # uncomment this if you want to use a custom image (to build it look at the previous step)
   version: latest
   # version: 2023.w49 # image tag or develop
   # pullPolicy: IfNotPresent or Never or Always
